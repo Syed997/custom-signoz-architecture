@@ -1,0 +1,231 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CORRELATION COLLECTOR CONFIG
+#
+# Purpose: Receive data from 2 apps + their K8s clusters, route to separate
+#          Kafka topics so SigNoz can correlate app traces with infra metrics.
+#
+# Data flow:
+#   app1 (cluster1) ──OTLP──► this collector ──► kafka topics: corr-app1-*
+#   app2 (cluster2) ──OTLP──► this collector ──► kafka topics: corr-app2-*
+#   cluster1 infra  ──OTLP──► this collector ──► kafka topics: corr-cluster1-*
+#   cluster2 infra  ──OTLP──► this collector ──► kafka topics: corr-cluster2-*
+#
+# Correlation key:
+#   - app1 spans carry:  service.name=app1  AND  k8s.cluster.name=cluster1
+#   - cluster1 metrics carry:               k8s.cluster.name=cluster1
+#   SigNoz links them via the shared k8s.cluster.name attribute.
+#
+# REQUIREMENT: k8sattributes processor must run on the in-cluster OTel agent
+#   (Helm chart DaemonSet) so that app spans are enriched with k8s.* attrs
+#   before reaching this collector. Set in each cluster's override-values:
+#     global.clusterName: cluster1   (or cluster2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:54317"
+      http:
+        endpoint: "0.0.0.0:54318"
+
+processors:
+  batch:
+
+  # 30% sampling for traces and logs (metrics volume controlled by collection_interval)
+  probabilistic_sampler:
+    sampling_percentage: 30
+
+  # ── App1 filters (keep only service.name=app1) ───────────────────────────
+  filter/app1_traces:
+    traces:
+      span:
+        - 'resource.attributes["service.name"] != "app1"'
+  filter/app1_metrics:
+    metrics:
+      datapoint:
+        - 'resource.attributes["service.name"] != "app1"'
+  filter/app1_logs:
+    logs:
+      log_record:
+        - 'resource.attributes["service.name"] != "app1"'
+
+  # ── App2 filters (keep only service.name=app2) ───────────────────────────
+  filter/app2_traces:
+    traces:
+      span:
+        - 'resource.attributes["service.name"] != "app2"'
+  filter/app2_metrics:
+    metrics:
+      datapoint:
+        - 'resource.attributes["service.name"] != "app2"'
+  filter/app2_logs:
+    logs:
+      log_record:
+        - 'resource.attributes["service.name"] != "app2"'
+
+  # ── Cluster1 infra filters (keep only k8s.cluster.name=cluster1) ─────────
+  # Captures kubeletstats, k8s_cluster, hostmetrics from cluster1 nodes/pods.
+  # App1 spans also carry this attribute — SigNoz uses it for correlation.
+  filter/cluster1_metrics:
+    metrics:
+      datapoint:
+        - 'resource.attributes["k8s.cluster.name"] != "cluster1"'
+  filter/cluster1_logs:
+    logs:
+      log_record:
+        - 'resource.attributes["k8s.cluster.name"] != "cluster1"'
+
+  # ── Cluster2 infra filters (keep only k8s.cluster.name=cluster2) ─────────
+  filter/cluster2_metrics:
+    metrics:
+      datapoint:
+        - 'resource.attributes["k8s.cluster.name"] != "cluster2"'
+  filter/cluster2_logs:
+    logs:
+      log_record:
+        - 'resource.attributes["k8s.cluster.name"] != "cluster2"'
+
+exporters:
+  # ── App1 ─────────────────────────────────────────────────────────────────
+  kafka/app1_traces:
+    brokers: ["localhost:9094"]
+    topic: corr-app1-traces
+    encoding: otlp_proto
+  kafka/app1_metrics:
+    brokers: ["localhost:9094"]
+    topic: corr-app1-metrics
+    encoding: otlp_proto
+  kafka/app1_logs:
+    brokers: ["localhost:9094"]
+    topic: corr-app1-logs
+    encoding: otlp_proto
+
+  file/app1_traces:
+    path: ./oteloutput/corr-app1-traces.json
+    format: json
+  file/app1_metrics:
+    path: ./oteloutput/corr-app1-metrics.json
+    format: json
+  file/app1_logs:
+    path: ./oteloutput/corr-app1-logs.json
+    format: json
+
+  # ── App2 ─────────────────────────────────────────────────────────────────
+  kafka/app2_traces:
+    brokers: ["localhost:9094"]
+    topic: corr-app2-traces
+    encoding: otlp_proto
+  kafka/app2_metrics:
+    brokers: ["localhost:9094"]
+    topic: corr-app2-metrics
+    encoding: otlp_proto
+  kafka/app2_logs:
+    brokers: ["localhost:9094"]
+    topic: corr-app2-logs
+    encoding: otlp_proto
+
+  file/app2_traces:
+    path: ./oteloutput/corr-app2-traces.json
+    format: json
+  file/app2_metrics:
+    path: ./oteloutput/corr-app2-metrics.json
+    format: json
+  file/app2_logs:
+    path: ./oteloutput/corr-app2-logs.json
+    format: json
+
+  # ── Cluster1 infra ───────────────────────────────────────────────────────
+  kafka/cluster1_metrics:
+    brokers: ["localhost:9094"]
+    topic: corr-cluster1-metrics
+    encoding: otlp_proto
+  kafka/cluster1_logs:
+    brokers: ["localhost:9094"]
+    topic: corr-cluster1-logs
+    encoding: otlp_proto
+
+  file/cluster1_metrics:
+    path: ./oteloutput/corr-cluster1-metrics.json
+    format: json
+  file/cluster1_logs:
+    path: ./oteloutput/corr-cluster1-logs.json
+    format: json
+
+  # ── Cluster2 infra ───────────────────────────────────────────────────────
+  kafka/cluster2_metrics:
+    brokers: ["localhost:9094"]
+    topic: corr-cluster2-metrics
+    encoding: otlp_proto
+  kafka/cluster2_logs:
+    brokers: ["localhost:9094"]
+    topic: corr-cluster2-logs
+    encoding: otlp_proto
+
+  file/cluster2_metrics:
+    path: ./oteloutput/corr-cluster2-metrics.json
+    format: json
+  file/cluster2_logs:
+    path: ./oteloutput/corr-cluster2-logs.json
+    format: json
+
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    # ── App1 pipelines ───────────────────────────────────────────────────
+    # filter first → sample 30% → batch
+    traces/app1:
+      receivers: [otlp]
+      processors: [filter/app1_traces, probabilistic_sampler, batch]
+      exporters: [kafka/app1_traces, file/app1_traces, debug]
+
+    metrics/app1:
+      receivers: [otlp]
+      processors: [filter/app1_metrics, batch]
+      exporters: [kafka/app1_metrics, file/app1_metrics, debug]
+
+    logs/app1:
+      receivers: [otlp]
+      processors: [filter/app1_logs, probabilistic_sampler, batch]
+      exporters: [kafka/app1_logs, file/app1_logs, debug]
+
+    # ── App2 pipelines ───────────────────────────────────────────────────
+    traces/app2:
+      receivers: [otlp]
+      processors: [filter/app2_traces, probabilistic_sampler, batch]
+      exporters: [kafka/app2_traces, file/app2_traces, debug]
+
+    metrics/app2:
+      receivers: [otlp]
+      processors: [filter/app2_metrics, batch]
+      exporters: [kafka/app2_metrics, file/app2_metrics, debug]
+
+    logs/app2:
+      receivers: [otlp]
+      processors: [filter/app2_logs, probabilistic_sampler, batch]
+      exporters: [kafka/app2_logs, file/app2_logs, debug]
+
+    # ── Cluster1 infra pipelines ─────────────────────────────────────────
+    # No trace pipeline — K8s infra emits metrics and logs, not traces.
+    metrics/cluster1:
+      receivers: [otlp]
+      processors: [filter/cluster1_metrics, batch]
+      exporters: [kafka/cluster1_metrics, file/cluster1_metrics, debug]
+
+    logs/cluster1:
+      receivers: [otlp]
+      processors: [filter/cluster1_logs, probabilistic_sampler, batch]
+      exporters: [kafka/cluster1_logs, file/cluster1_logs, debug]
+
+    # ── Cluster2 infra pipelines ─────────────────────────────────────────
+    metrics/cluster2:
+      receivers: [otlp]
+      processors: [filter/cluster2_metrics, batch]
+      exporters: [kafka/cluster2_metrics, file/cluster2_metrics, debug]
+
+    logs/cluster2:
+      receivers: [otlp]
+      processors: [filter/cluster2_logs, probabilistic_sampler, batch]
+      exporters: [kafka/cluster2_logs, file/cluster2_logs, debug]
