@@ -8,13 +8,18 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
 
+import os
+
+APP1_HOST = os.environ.get("APP1_HOST", "localhost")
+APP2_HOST = os.environ.get("APP2_HOST", "localhost")
+
 apps = [
-    ("http://127.0.0.1:9001/", "http://127.0.0.1:9001/error"),
-    ("http://127.0.0.1:9002/", "http://127.0.0.1:9002/error"),
+    (f"http://{APP1_HOST}:9001/", f"http://{APP1_HOST}:9001/error"),
+    (f"http://{APP2_HOST}:9002/", f"http://{APP2_HOST}:9002/error"),
 ]
 
 cached_urls = [
-    "http://127.0.0.1:9002/cached",
+    f"http://{APP2_HOST}:9002/cached",
 ]
 
 def send_request():

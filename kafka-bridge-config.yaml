@@ -40,8 +40,8 @@ processors:
   batch:
 
 exporters:
-  otlp:
-    endpoint: signoz-otel-collector:4317
+  otlphttp:
+    endpoint: http://signoz-otel-collector:4318
     tls:
       insecure: true
 
@@ -50,24 +50,24 @@ service:
     traces:
       receivers: [kafka/traces]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]
     metrics:
       receivers: [kafka/metrics]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]
     metrics/redis:
       receivers: [kafka/redis_metrics]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]
     traces/laravel:
       receivers: [kafka/laravel_traces]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]
     logs/laravel:
       receivers: [kafka/laravel_logs]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]
     metrics/postgres:
       receivers: [kafka/postgres_metrics]
       processors: [batch]
-      exporters: [otlp]
+      exporters: [otlphttp]

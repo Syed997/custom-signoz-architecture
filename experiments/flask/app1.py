@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 import logging
+import os
 import random
 import time
 import threading
@@ -10,12 +11,14 @@ from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
+OTEL_ENDPOINT = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+
 # Initialize LoggerProvider with service name
 resource = Resource(attributes={"service.name": "app1"})
 logger_provider = LoggerProvider(resource=resource)
 
 # Configure OTLP Log Exporter
-otlp_exporter = OTLPLogExporter(endpoint="http://0.0.0.0:4317", insecure=True)
+otlp_exporter = OTLPLogExporter(endpoint=OTEL_ENDPOINT, insecure=True)
 logger_provider.add_log_record_processor(BatchLogRecordProcessor(otlp_exporter))
 
 # Set the LoggerProvider
@@ -57,4 +60,4 @@ def generate_dummy_logs():
 threading.Thread(target=generate_dummy_logs, daemon=True).start()
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=9001)
+    app.run(host="0.0.0.0", port=9001)

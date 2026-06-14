@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 import logging
+import os
 import random
 import time
 import threading
@@ -17,7 +18,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 
-OTEL_ENDPOINT = "http://0.0.0.0:4317"
+OTEL_ENDPOINT = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 resource = Resource(attributes={"service.name": "flask"})
 
 # Traces
@@ -38,7 +40,7 @@ app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
 
 # Redis client
-r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+r = redis.Redis(host=REDIS_HOST, port=6379, decode_responses=True)
 
 @app.route("/")
 def home():
@@ -81,4 +83,4 @@ def generate_dummy_logs():
 threading.Thread(target=generate_dummy_logs, daemon=True).start()
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=9002)
+    app.run(host="0.0.0.0", port=9002)

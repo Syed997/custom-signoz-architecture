@@ -46,6 +46,18 @@ services:
     networks:
       - demo
 
+  flask-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    container_name: flask-collector
+    volumes:
+      - ./flask-config.yaml:/etc/otelcol-contrib/config.yaml
+      - ./oteloutput:/oteloutput
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - demo
+
   kafka-bridge:
     image: otel/opentelemetry-collector-contrib:0.104.0
     container_name: kafka-bridge
@@ -56,12 +68,12 @@ services:
         condition: service_healthy
     networks:
       - demo
-      # - signoz-net
+      - signoz-net
 
 networks:
   demo:
     driver: bridge
-  # signoz-net:
-  #   name: signoz-net
-  #   external: true
+  signoz-net:
+    name: signoz-net
+    external: true
 

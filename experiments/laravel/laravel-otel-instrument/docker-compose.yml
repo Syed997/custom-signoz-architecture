@@ -13,11 +13,19 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: php artisan serve --host=0.0.0.0 --port=8000
+    environment:
+      OTEL_SERVICE_NAME: laravel
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:54318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://host.docker.internal:54318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://host.docker.internal:54318/v1/logs
+      OTEL_PHP_AUTOLOAD_ENABLED: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_PHP_TRACES_PROCESSOR: simple
+      OTEL_LOG_LEVEL: info
+      OTEL_PROPAGATORS: baggage,tracecontext
     networks:
       - app-network
-    #   - signoz-net
-    # environment:
-    #   - OTLP_ENDPOINT=http://10.104.10.140:4318/v1/traces
 
   db:
     # image: mysql:8.0

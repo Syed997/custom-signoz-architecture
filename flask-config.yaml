@@ -1,0 +1,53 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+
+processors:
+  batch:
+
+exporters:
+  kafka/flask_traces:
+    brokers: ["kafka:9092"]
+    topic: demo-flask-traces
+    encoding: otlp_proto
+
+  kafka/flask_metrics:
+    brokers: ["kafka:9092"]
+    topic: demo-flask-metrics
+    encoding: otlp_proto
+
+  file/flask_traces:
+    path: /oteloutput/demo-flask-traces.json
+    format: json
+
+  file/flask_metrics:
+    path: /oteloutput/demo-flask-metrics.json
+    format: json
+
+  file/flask_logs:
+    path: /oteloutput/demo-flask-logs.json
+    format: json
+
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [kafka/flask_traces, file/flask_traces, debug]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [kafka/flask_metrics, file/flask_metrics, debug]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file/flask_logs, debug]

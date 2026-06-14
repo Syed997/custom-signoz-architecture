@@ -1,0 +1,7 @@
+flask==3.0.3
+redis==5.0.8
+requests==2.32.3
+opentelemetry-distro==0.47b0
+opentelemetry-exporter-otlp==1.26.0
+opentelemetry-instrumentation-flask==0.47b0
+opentelemetry-instrumentation-requests==0.47b0

@@ -1,0 +1,60 @@
+services:
+  app1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-app1
+    command: >
+      opentelemetry-instrument python3 app1.py
+    environment:
+      OTEL_SERVICE_NAME: app1
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://flask-collector:4317
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_PYTHON_DISABLED_INSTRUMENTATIONS: aws-lambda
+    ports:
+      - "9001:9001"
+    networks:
+      - app-network
+      - demo
+
+  app2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask-app2
+    command: >
+      opentelemetry-instrument python3 app2.py
+    environment:
+      OTEL_SERVICE_NAME: flask
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://flask-collector:4317
+      OTEL_PYTHON_LOG_CORRELATION: "true"
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_PYTHON_DISABLED_INSTRUMENTATIONS: aws-lambda
+      REDIS_HOST: redis
+    ports:
+      - "9002:9002"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+      - demo
+
+  redis:
+    image: redis:7-alpine
+    container_name: flask-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+  demo:
+    name: custom-signoz-architecture_demo
+    external: true
