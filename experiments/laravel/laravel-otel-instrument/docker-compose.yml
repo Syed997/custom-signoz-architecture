@@ -9,7 +9,7 @@ services:
     # volumes:
     #   - ./:/var/www
     ports:
-      - "8000:8000"
+      - "8001:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: php artisan serve --host=0.0.0.0 --port=8000

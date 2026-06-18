@@ -40,6 +40,9 @@ processors:
       - key: host.name
         value: "localhost"
         action: upsert
+      - key: service.name
+        value: laravel
+        action: upsert
 
   filter/laravel_traces:
     traces:
@@ -76,6 +79,8 @@ exporters:
     brokers: ["kafka:9092"]
     topic: demo-laravel-logs
     encoding: otlp_proto
+    producer:
+      max_message_bytes: 10000000
 
   file/laravel_traces:
     path: /oteloutput/demo-laravel-traces.json

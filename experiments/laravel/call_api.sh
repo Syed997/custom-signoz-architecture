@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # API endpoints
-API_URL="http://localhost:8000/api/people"
-EXTERNAL_API_URL="http://localhost:8000/api/external/people"
-ERROR_API_URL="http://localhost:8000/api/people/5000"  # Added error endpoint
+API_URL="http://localhost:8001/api/people"
+EXTERNAL_API_URL="http://localhost:8001/api/external/people"
+ERROR_API_URL="http://localhost:8001/api/people/5000"  # Added error endpoint
 
 # Function to generate random name
 random_name() {

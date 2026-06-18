@@ -56,12 +56,12 @@ services:
         condition: service_healthy
     networks:
       - demo
-      # - signoz-net
+      - signoz-net
 
 networks:
   demo:
     driver: bridge
-  # signoz-net:
-  #   name: signoz-net
-  #   external: true
+  signoz-net:
+    name: signoz-net
+    external: true
 
