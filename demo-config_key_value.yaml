@@ -1,0 +1,136 @@
+receivers:
+  redis:
+    endpoint: "localhost:6379"
+    collection_interval: 10s
+    # password: "yourpassword"
+
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:54317"
+      http:
+        endpoint: "0.0.0.0:54318"
+
+  postgresql:
+    endpoint: "host.docker.internal:5433"
+    username: root
+    password: "root"
+    databases:
+      - test_crud
+    collection_interval: 10s
+    tls:
+      insecure: true
+    metrics:
+      postgresql.deadlocks:
+        enabled: true
+      postgresql.database.locks:
+        enabled: true
+
+processors:
+  batch:
+
+  resource/laravel-redis:
+    attributes:
+      - key: service.name
+        value: "test-laravel"
+        action: upsert
+      - key: db.system
+        value: "redis"
+        action: upsert
+
+  resource/laravel-postgres:
+    attributes:
+      - key: service.name
+        value: "test-laravel"
+        action: upsert
+      - key: db.system
+        value: "postgresql"
+        action: upsert
+      - key: db.name
+        value: "test_crud"
+        action: upsert
+
+  filter/laravel_traces:
+    traces:
+      span:
+        - 'resource.attributes["service.name"] != "test-laravel"'
+  filter/laravel_metrics:
+    metrics:
+      datapoint:
+        - 'resource.attributes["service.name"] != "test-laravel"'
+  filter/laravel_logs:
+    logs:
+      log_record:
+        - 'resource.attributes["service.name"] != "test-laravel"'
+
+exporters:
+  kafka/redis_metrics:
+    brokers: ["kafka:9092"]
+    topic: demo-redis-metrics
+    encoding: otlp_proto
+
+  file/redis_metrics:
+    path: /oteloutput/demo-redis-metrics.json
+    format: json
+
+  kafka/laravel_traces:
+    brokers: ["kafka:9092"]
+    topic: demo-laravel-traces
+    encoding: otlp_proto
+  kafka/laravel_metrics:
+    brokers: ["kafka:9092"]
+    topic: demo-laravel-metrics
+    encoding: otlp_proto
+  kafka/laravel_logs:
+    brokers: ["kafka:9092"]
+    topic: demo-laravel-logs
+    encoding: otlp_proto
+
+  file/laravel_traces:
+    path: /oteloutput/demo-laravel-traces.json
+    format: json
+  file/laravel_metrics:
+    path: /oteloutput/demo-laravel-metrics.json
+    format: json
+  file/laravel_logs:
+    path: /oteloutput/demo-laravel-logs.json
+    format: json
+
+  kafka/postgres_metrics:
+    brokers: ["kafka:9092"]
+    topic: demo-postgres-metrics
+    encoding: otlp_proto
+
+  file/postgres_metrics:
+    path: /oteloutput/demo-postgres-metrics.json
+    format: json
+
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    metrics/redis:
+      receivers: [redis]
+      processors: [resource/laravel-redis, batch]
+      exporters: [kafka/redis_metrics, file/redis_metrics, debug]
+
+    traces/laravel:
+      receivers: [otlp]
+      processors: [filter/laravel_traces, batch]
+      exporters: [kafka/laravel_traces, file/laravel_traces, debug]
+
+    metrics/laravel:
+      receivers: [otlp]
+      processors: [filter/laravel_metrics, batch]
+      exporters: [kafka/laravel_metrics, file/laravel_metrics, debug]
+
+    logs/laravel:
+      receivers: [otlp]
+      processors: [filter/laravel_logs, batch]
+      exporters: [kafka/laravel_logs, file/laravel_logs, debug]
+
+    metrics/postgres:
+      receivers: [postgresql]
+      processors: [resource/laravel-postgres, batch]
+      exporters: [kafka/postgres_metrics, file/postgres_metrics, debug]
