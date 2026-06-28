@@ -20,18 +20,6 @@ services:
     #   - OTLP_ENDPOINT=http://10.104.10.140:4318/v1/traces
 
   db:
-    # image: mysql:8.0
-    # container_name: laravel_db
-    # environment:
-    #   MYSQL_DATABASE: test_crud
-    #   MYSQL_ROOT_PASSWORD: ""
-    #   MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-    # volumes:
-    #   - dbdata:/var/lib/mysql
-    # networks:
-    #   - app-network
-
-
     image: postgres:15
     container_name: php-postgres
     environment:
