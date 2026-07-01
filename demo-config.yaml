@@ -101,32 +101,29 @@ exporters:
     path: /oteloutput/demo-postgres-metrics.json
     format: json
 
-  debug:
-    verbosity: detailed
-
 service:
   pipelines:
     metrics/redis:
       receivers: [redis]
       processors: [resource/redis, batch]
-      exporters: [kafka/redis_metrics, file/redis_metrics, debug]
+      exporters: [kafka/redis_metrics, file/redis_metrics]
 
     traces/laravel:
       receivers: [otlp]
       processors: [filter/laravel_traces, batch]
-      exporters: [kafka/laravel_traces, file/laravel_traces, debug]
+      exporters: [kafka/laravel_traces, file/laravel_traces]
 
     metrics/laravel:
       receivers: [otlp]
       processors: [filter/laravel_metrics, batch]
-      exporters: [kafka/laravel_metrics, file/laravel_metrics, debug]
+      exporters: [kafka/laravel_metrics, file/laravel_metrics]
 
     logs/laravel:
       receivers: [otlp]
       processors: [filter/laravel_logs, batch]
-      exporters: [kafka/laravel_logs, file/laravel_logs, debug]
+      exporters: [kafka/laravel_logs, file/laravel_logs]
 
     metrics/postgres:
       receivers: [postgresql]
       processors: [resource/postgres, batch]
-      exporters: [kafka/postgres_metrics, file/postgres_metrics, debug]
+      exporters: [kafka/postgres_metrics, file/postgres_metrics]
